@@ -101,12 +101,15 @@ animatedElements.forEach(el => {
     el.classList.add('fade-in');
 });
 
+// Fixed: Use a global counter for proper staggered animation timing
+let animationIndex = 0;
 const animationObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry, index) => {
+    entries.forEach((entry) => {
         if (entry.isIntersecting) {
+            const currentIndex = animationIndex++;
             setTimeout(() => {
                 entry.target.classList.add('visible');
-            }, index * 80);
+            }, currentIndex * 80);
             animationObserver.unobserve(entry.target);
         }
     });
@@ -204,11 +207,11 @@ if (bookingDate) {
 }
 
 // ===================================
-// CONTACT FORM SUBMISSION
+// CONTACT FORM SUBMISSION (Formspree)
 // ===================================
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const submitBtn = contactForm.querySelector('button[type="submit"]');
@@ -218,24 +221,37 @@ if (contactForm) {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發送中...';
         submitBtn.disabled = true;
         
-        // Simulate form submission
-        setTimeout(() => {
+        try {
+            const formData = new FormData(contactForm);
+            const response = await fetch('https://formspree.io/f/mjkyggye', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                showNotification('查詢已成功發送！我們將盡快回覆您。', 'success');
+                contactForm.reset();
+            } else {
+                throw new Error('Form submission failed');
+            }
+        } catch (error) {
+            showNotification('發送失敗，請稍後再試或直接 WhatsApp 聯絡我們。', 'error');
+        } finally {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
-            
-            // Show success notification
-            showNotification('查詢已成功發送！我們將盡快回覆您。', 'success');
-            contactForm.reset();
-        }, 1500);
+        }
     });
 }
 
 // ===================================
-// BOOKING FORM SUBMISSION
+// BOOKING FORM SUBMISSION (Formspree)
 // ===================================
 const bookingForm = document.getElementById('bookingForm');
 if (bookingForm) {
-    bookingForm.addEventListener('submit', (e) => {
+    bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const submitBtn = bookingForm.querySelector('button[type="submit"]');
@@ -246,23 +262,36 @@ if (bookingForm) {
         submitBtn.disabled = true;
         submitBtn.style.background = 'linear-gradient(135deg, #a0a0a0, #c0c0c0)';
         
-        // Simulate form submission
-        setTimeout(() => {
+        try {
+            const formData = new FormData(bookingForm);
+            const response = await fetch('https://formspree.io/f/mjkyggye', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                showModal();
+                bookingForm.reset();
+                
+                // Reset date
+                if (bookingDate) {
+                    const defaultDate = new Date();
+                    defaultDate.setDate(defaultDate.getDate() + 3);
+                    bookingDate.value = defaultDate.toISOString().split('T')[0];
+                }
+            } else {
+                throw new Error('Form submission failed');
+            }
+        } catch (error) {
+            showNotification('預約失敗，請稍後再試或直接 WhatsApp 聯絡我們。', 'error');
+        } finally {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
             submitBtn.style.background = '';
-            
-            // Show success modal
-            showModal();
-            bookingForm.reset();
-            
-            // Reset date
-            if (bookingDate) {
-                const defaultDate = new Date();
-                defaultDate.setDate(defaultDate.getDate() + 3);
-                bookingDate.value = defaultDate.toISOString().split('T')[0];
-            }
-        }, 2000);
+        }
     });
 }
 
